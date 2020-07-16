@@ -1,6 +1,9 @@
 const path = require("path");
+const webpack = require("webpack");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+
 const isDev = process.env.NODE_ENV === "development";
 const config = require("./public/config")[isDev ? "dev" : "build"];
 
@@ -91,6 +94,22 @@ module.exports = {
       template: "./public/index.html",
       filename: "index.html",
       config: config.template,
+    }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: "./public/js/*.js",
+          to: path.resolve(__dirname, "dist", "js"),
+          flatten: true,
+        },
+      ],
+    }),
+    new webpack.ProvidePlugin({
+      React: "react",
+      Component: ["react", "Component"],
+      Vue: ["vue/dist/vue.esm.js", "default"],
+      $: "jquery",
+      _map: ["lodash", "map"],
     }),
   ],
 };
