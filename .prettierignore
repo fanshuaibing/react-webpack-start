@@ -6,3 +6,4 @@ node_modules
 images/
 .babelrc
 yarn-error.log
+.browserslistrc

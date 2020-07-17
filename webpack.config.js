@@ -3,20 +3,25 @@ const webpack = require("webpack");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCssPlugin = require("optimize-css-assets-webpack-plugin");
 
 const isDev = process.env.NODE_ENV === "development";
-const config = require("./public/config")[isDev ? "dev" : "build"];
 
 module.exports = {
   mode: isDev ? "development" : "production",
-  entry: "./src/index.js",
+  entry: {
+    index: "./src/index.js",
+    login: "./src/login.js",
+  },
+
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bundle.[hash].js",
-    publicPath: "",
+    filename: "[name].[hash:6].js",
   },
   devServer: {
     port: "3000", //默认是8080
+    hot: true,
     quiet: false, //默认不启用
     inline: true, //默认开启 inline 模式，如果设置为false,开启 iframe 模式
     stats: "errors-only", //终端仅打印 error
@@ -47,7 +52,13 @@ module.exports = {
       {
         test: /\.(le|c|sc)ss$/,
         use: [
-          "style-loader",
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              hmr: isDev,
+              reloadAll: true,
+            },
+          },
           "css-loader",
           {
             loader: "postcss-loader",
@@ -86,14 +97,26 @@ module.exports = {
       },
     ],
   },
-  devtool: "cheap-module-eval-source-map", // 开发华宁下使用
+  devtool: "cheap-module-eval-source-map", // 开发环境下使用
   plugins: [
+    new webpack.HotModuleReplacementPlugin(),
     new CleanWebpackPlugin(),
-
+    new OptimizeCssPlugin(),
+    new MiniCssExtractPlugin({
+      filename: "css/[name].css",
+      publicPath: "../../",
+      //个人习惯将css文件放在单独目录下
+      //publicPath:'../'   //如果你的output的publicPath配置的是 './' 这种相对路径，那么如果将css文件放在单独目录下，记得在这里指定一下publicPath
+    }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
       filename: "index.html",
-      config: config.template,
+      chunks: ["index"],
+    }),
+    new HtmlWebpackPlugin({
+      template: "./public/login.html",
+      filename: "login.html",
+      chunks: ["login"],
     }),
     new CopyPlugin({
       patterns: [
