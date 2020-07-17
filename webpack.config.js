@@ -5,14 +5,18 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssPlugin = require("optimize-css-assets-webpack-plugin");
+const SpeedMeasurePlugin = require("speed-measure-webpack-plugin");
+const HardSourceWebpackPlugin = require("hard-source-webpack-plugin");
+const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
+  .BundleAnalyzerPlugin;
 
+const smp = new SpeedMeasurePlugin();
 const isDev = process.env.NODE_ENV === "development";
 
-module.exports = {
+module.exports = smp.wrap({
   mode: isDev ? "development" : "production",
   entry: {
     index: "./src/index.js",
-    login: "./src/login.js",
   },
 
   output: {
@@ -37,21 +41,25 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/, // 匹配顾泽
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ["@babel/preset-env"],
-            plugins: [
-              [
-                "@babel/plugin-transform-runtime",
-                {
-                  corejs: 3,
-                },
+        use: [
+          "thread-loader",
+          "cache-loader",
+          {
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-env"],
+              plugins: [
+                [
+                  "@babel/plugin-transform-runtime",
+                  {
+                    corejs: 3,
+                  },
+                ],
               ],
-            ],
+            },
           },
-        },
-        exclude: /node_modules/,
+        ],
+        include: [path.resolve(__dirname, "src")],
       },
       {
         test: /\.(le|c|sc)ss$/,
@@ -104,8 +112,13 @@ module.exports = {
   },
   devtool: "cheap-module-eval-source-map", // 开发环境下使用
   plugins: [
+    new HardSourceWebpackPlugin(),
+    // new BundleAnalyzerPlugin(),
     new webpack.HotModuleReplacementPlugin(),
-    new CleanWebpackPlugin(),
+
+    new CleanWebpackPlugin({
+      cleanOnceBeforeBuildPatterns: ["**/*", "!dll", "!dll/**"], //不删除dll目录
+    }),
     new OptimizeCssPlugin(),
     new MiniCssExtractPlugin({
       filename: "css/[name].css",
@@ -118,11 +131,7 @@ module.exports = {
       filename: "index.html",
       chunks: ["index"],
     }),
-    new HtmlWebpackPlugin({
-      template: "./public/login.html",
-      filename: "login.html",
-      chunks: ["login"],
-    }),
+
     new CopyPlugin({
       patterns: [
         {
@@ -140,4 +149,30 @@ module.exports = {
       _map: ["lodash", "map"],
     }),
   ],
-};
+  optimization: {
+    concatenateModules: false,
+    splitChunks: {
+      //分割代码块
+      maxInitialRequests: 6, //默认是5
+      cacheGroups: {
+        vendor: {
+          //第三方依赖
+          priority: 1,
+          name: "vendor",
+          test: /node_modules/,
+          chunks: "initial",
+          minSize: 100,
+          minChunks: 1, //重复引入了几次
+        },
+        "lottie-web": {
+          name: "lottie-web", // 单独将 react-lottie 拆包
+          priority: 5, // 权重需大于`vendor`
+          test: /[\/]node_modules[\/]lottie-web[\/]/,
+          chunks: "initial",
+          minSize: 100,
+          minChunks: 1, //重复引入了几次
+        },
+      },
+    },
+  },
+});

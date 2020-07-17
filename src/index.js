@@ -1,16 +1,12 @@
 import "./index.less";
-import axios from "axios";
-class Animal {
-  constructor(name) {
-    this.name = name;
-  }
-  getName() {
-    return this.name;
-  }
-}
+import React from "react";
+import ReactDom from "react-dom";
 
-console.log(React);
-
-axios.get("/api/user").then((res) => {
-  console.log(res);
-});
+const App = () => {
+  return (
+    <div>
+      <h1>App</h1>
+    </div>
+  );
+};
+ReactDom.render(<App />, document.getElementById("app"));
