@@ -18,6 +18,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "[name].[hash:6].js",
+    publicPath: "",
   },
   devServer: {
     port: "3000", //默认是8080
@@ -28,6 +29,9 @@ module.exports = {
     overlay: false, //默认不启用
     clientLogLevel: "silent", //日志等级
     compress: true, //是否启用 gzip 压缩
+    proxy: {
+      "/api": "http://localhost:4000",
+    },
   },
   module: {
     rules: [
@@ -83,6 +87,7 @@ module.exports = {
             loader: "url-loader",
             options: {
               outputPath: "assets",
+              publicPath: "../assets",
               limit: 10240, // 设置 limit 的值大小为 10240，即资源大小小于 10K 时，将资源转换为 base64，超过 10K，将图片拷贝到 dist 目录
               esModule: false,
               name: "[name]_[hash:6].[ext]",
@@ -104,7 +109,7 @@ module.exports = {
     new OptimizeCssPlugin(),
     new MiniCssExtractPlugin({
       filename: "css/[name].css",
-      publicPath: "../../",
+      publicPath: "/",
       //个人习惯将css文件放在单独目录下
       //publicPath:'../'   //如果你的output的publicPath配置的是 './' 这种相对路径，那么如果将css文件放在单独目录下，记得在这里指定一下publicPath
     }),
